@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<!--
+  Soundboard by Davis Tech Support
+  Copyright (c) 2026 Davis Tech Support (Michael Davis). All rights reserved.
+  Unauthorized copying, modification, redistribution, or resale of this
+  software, in whole or in part, is prohibited. See LICENSE.txt.
+  Licensing: davis.tech.va@gmail.com
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Soundboard</title>
+<meta name="author" content="Davis Tech Support">
+<meta name="copyright" content="Copyright (c) 2026 Davis Tech Support. All rights reserved.">
+<meta name="apple-mobile-web-app-title" content="Soundboard">
+<meta name="theme-color" content="#071226">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    --ink: #0a0a12;
+    --card: rgba(255,255,255,0.055);
+    --card-border: rgba(255,255,255,0.09);
+    --text: #f6f5fb;
+    --text-dim: #a7a4bd;
+    --text-faint: #6f6c86;
+    --danger: #ff5c72;
+    --led: #4dff9a;
+
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body{
+    margin:0;
+    padding:0;
+    min-height: 100vh;
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--ink);
+  }
+
+  .bg{
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  .blob{
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+
+  .blob.b1{
+    width: 46vw; height: 46vw;
+    top: -14vw; left: -10vw;
+    background: #6c3df0;
+    animation: drift1 26s ease-in-out infinite alternate;
+  }
+  .blob.b2{
+    width: 40vw; height: 40vw;
+    bottom: -16vw; right: -8vw;
+    background: #12b3a8;
+    animation: drift2 30s ease-in-out infinite alternate;
+  }
+  .blob.b3{
+    width: 34vw; height: 34vw;
+    top: 30%; right: 10%;
+    background: #ef5da8;
+    opacity: 0.35;
+    animation: drift3 22s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift1{ to{ transform: translate(6vw, 8vw) scale(1.1); } }
+  @keyframes drift2{ to{ transform: translate(-5vw, -6vw) scale(1.08); } }
+  @keyframes drift3{ to{ transform: translate(-4vw, 5vw) scale(0.94); } }
+
+  @media (prefers-reduced-motion: reduce){
+    .blob{ animation: none !important; }
+  }
+
+  body{
+    display:flex;
+    justify-content:center;
+    padding:
+      max(40px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 32px max(16px, env(safe-area-inset-left));
+    position: relative;
+  }
+
+  .unit{
+    width: 100%;
+    max-width: 960px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---------- Header ---------- */
+  .header{
+    text-align: center;
+    margin-bottom: 26px;
+  }
+
+  .header h1{
+    margin: 0;
+    font-size: clamp(32px, 6vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(100deg, #ffffff 20%, #c9c3ff 55%, #8fe9df 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .header p{
+    margin: 8px 0 0;
+    font-size: 15px;
+    color: var(--text-dim);
+  }
+
+  /* ---------- Deck ---------- */
+  .deck{
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    padding: 22px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.45);
+    transition: border-color 180ms ease, background 180ms ease;
+  }
+
+  .deck.drag-over{
+    border-color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.09);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 480px){
+    .grid{ grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  }
+
+  /* ---------- Pad ---------- */
+  .pad{
+    position:relative;
+    aspect-ratio: 1 / 0.92;
+    border-radius: 20px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--grad, linear-gradient(155deg, #5b5b6b, #3a3a46));
+    box-shadow:
+      0 12px 22px -8px var(--glow, rgba(0,0,0,0.4)),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: scale(1);
+    transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    overflow:hidden;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  .pad:hover{ transform: scale(1.035); }
+  .pad:active{ transform: scale(0.94); }
+
+  .pad.playing{
+    box-shadow:
+      0 0 0 3px rgba(77,255,154,0.65),
+      0 14px 30px -6px var(--glow, rgba(0,0,0,0.5)),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+
+  .pad:focus-visible{
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  .pad .led{
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.25);
+    box-shadow: inset 0 0 2px rgba(0,0,0,0.4);
+    transition: background 120ms ease, box-shadow 120ms ease;
+  }
+
+  .pad.playing .led{
+    background: var(--led);
+    box-shadow: 0 0 10px 3px rgba(77,255,154,0.85);
+  }
+
+  .pad .toolbar{
+    position:absolute;
+    top: 6px;
+    right: 6px;
+    display:flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 140ms ease;
+  }
+
+  .pad:hover .toolbar,
+  .pad:focus-within .toolbar{ opacity: 1; }
+
+  @media (hover: none){
+    .pad .toolbar{ opacity: 0.7; }
+  }
+
+  .pad .toolbar button{
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);
+    color: rgba(255,255,255,0.95);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    touch-action: manipulation;
+    transition: background 140ms ease;
+  }
+
+  .pad .toolbar button svg{ width: 14px; height: 14px; }
+
+  .pad .toolbar .remove:hover,
+  .pad .toolbar .remove:active{ background: var(--danger); }
+
+  .pad .toolbar .edit:hover,
+  .pad .toolbar .edit:active{ background: rgba(255,255,255,0.35); }
+
+  .pad .icon{
+    width: 34px;
+    height: 34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: rgba(255,255,255,0.92);
+  }
+
+  .pad .icon svg{ width: 100%; height: 100%; }
+
+  .pad .eq{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap: 4px;
+    height: 34px;
+  }
+
+  .pad .eq span{
+    width: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.95);
+    display:block;
+    animation: bounce 850ms ease-in-out infinite;
+  }
+
+  .pad .eq span:nth-child(1){ animation-delay: 0ms; }
+  .pad .eq span:nth-child(2){ animation-delay: 110ms; }
+  .pad .eq span:nth-child(3){ animation-delay: 220ms; }
+  .pad .eq span:nth-child(4){ animation-delay: 330ms; }
+  .pad .eq span:nth-child(5){ animation-delay: 440ms; }
+
+  @keyframes bounce{
+    0%, 100%{ height: 8px; }
+    50%{ height: 30px; }
+  }
+
+  .pad .label{
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.96);
+    text-align: center;
+    padding: 0 12px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+
+  .pad .hotkey{
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.3);
+    color: rgba(255,255,255,0.85);
+    font-size: 10px;
+    font-weight: 700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* ---------- Add tile ---------- */
+  .add-tile{
+    aspect-ratio: 1 / 0.92;
+    border-radius: 20px;
+    border: 1.5px dashed rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.02);
+    color: var(--text-dim);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    cursor:pointer;
+    font-family: var(--sans);
+    transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 150ms ease;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  .add-tile:hover{
+    border-color: rgba(255,255,255,0.5);
+    color: var(--text);
+    background: rgba(255,255,255,0.05);
+    transform: scale(1.02);
+  }
+
+  .add-tile:active{ transform: scale(0.96); }
+
+  .add-tile:focus-visible{
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  .add-tile .plus-ring{
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 18px;
+    font-weight: 300;
+  }
+
+  .add-tile .add-label{
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty{
+    grid-column: 1 / -1;
+    text-align:center;
+    padding: 46px 20px 10px;
+    color: var(--text-dim);
+  }
+
+  .empty .icon-wrap{
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 16px;
+    background: linear-gradient(155deg, rgba(108,61,240,0.35), rgba(18,179,168,0.35));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .empty p{
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .empty .sub{
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+
+  /* ---------- Footer / brand ---------- */
+  .brand-footer{
+    margin-top: 26px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+  }
+
+  .brand-footer .mark{
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: #fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+
+  .brand-footer .brand-text{
+    font-size: 13px;
+    color: var(--text-faint);
+    line-height: 1.3;
+  }
+
+  .brand-footer .brand-text b{
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  /* ---------- Edit modal ---------- */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(6,5,12,0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    z-index: 10;
+  }
+
+  .modal-card{
+    width: 100%;
+    max-width: 340px;
+    background: #0f2140;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 22px;
+    padding: 22px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  }
+
+  .modal-card h2{
+    margin: 0 0 18px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .field{
+    margin-bottom: 16px;
+  }
+
+  .field label{
+    display:block;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+    font-weight: 500;
+  }
+
+  .field input[type="text"]{
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+  }
+
+  .field input[type="text"]:focus{
+    outline: none;
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  .swatches{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .swatch{
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+  }
+
+  .swatch.selected{
+    border-color: #fff;
+  }
+
+  .swatch.custom{
+    background: conic-gradient(from 180deg, red, yellow, lime, cyan, blue, magenta, red);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow: hidden;
+  }
+
+  .swatch.custom input[type="color"]{
+    position:absolute;
+    inset: -4px;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .field .hint{
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  .volume-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+
+  .volume-row input[type="range"]{
+    flex: 1;
+    accent-color: #33b0d6;
+  }
+
+  .volume-row .volume-value{
+    font-size: 12px;
+    color: var(--text-dim);
+    width: 34px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .field input.hotkey-input{
+    width: 56px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .modal-actions{
+    display:flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .btn{
+    flex: 1;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .btn.primary{
+    background: linear-gradient(135deg, #33b0d6, #12b3a8);
+    color: #fff;
+  }
+
+  .btn.secondary{
+    background: rgba(255,255,255,0.08);
+    color: var(--text-dim);
+  }
+
+  .btn:active{ transform: scale(0.97); }
+
+  .sr-only{
+    position:absolute;
+    width:1px; height:1px;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
+    white-space:nowrap;
+  }
+
+  /* ---------- Board tabs ---------- */
+  .boards{
+    display:flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 12px;
+    margin-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .boards::-webkit-scrollbar{ display:none; }
+
+  .board-tab{
+    flex-shrink: 0;
+    max-width: 200px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    touch-action: manipulation;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .board-tab.active{
+    color: #fff;
+    border-color: rgba(255,255,255,0.3);
+    background: linear-gradient(135deg, #3cc0e6, #2a8fc4);
+  }
+  .board-tab .dots{
+    font-size: 16px;
+    line-height: 1;
+    opacity: 0.8;
+    letter-spacing: 1px;
+  }
+  body.locked .board-tab .dots{ display:none; }
+  .board-tab.add{
+    padding: 9px 14px;
+    border-style: dashed;
+    color: var(--text-dim);
+  }
+  body.locked .board-tab.add{ display:none; }
+
+  /* ---------- Control bar ---------- */
+  .controls{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .ctrl-btn{
+    flex-shrink: 0;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 0 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .ctrl-btn svg{ width: 18px; height: 18px; flex-shrink: 0; }
+  .ctrl-btn:active{ transform: scale(0.96); }
+  .ctrl-btn.stop{ color: #fff; background: rgba(255,92,114,0.22); border-color: rgba(255,92,114,0.45); }
+  .ctrl-btn.stop.live{ background: var(--danger); border-color: var(--danger); }
+  .ctrl-btn.lock{ width: 44px; padding: 0; }
+  .ctrl-btn.lock.on{ background: rgba(255,214,110,0.22); border-color: rgba(255,214,110,0.6); color: #ffd66e; }
+  .ctrl-btn.lock.holding{ box-shadow: 0 0 0 3px rgba(255,214,110,0.5); }
+
+  .master{
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 0 14px;
+    color: var(--text-dim);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .master svg{ width: 18px; height: 18px; flex-shrink: 0; }
+  .master input{ flex: 1; min-width: 0; accent-color: #33b0d6; }
+  .master .val{ width: 36px; text-align:right; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 480px){
+    .ctrl-btn .txt{ display:none; }
+    .ctrl-btn.stop{ width: 44px; padding: 0; }
+    .master .val{ display:none; }
+  }
+
+  /* ---------- Lock mode ---------- */
+  body.locked .pad .toolbar,
+  body.locked .add-tile{ display:none; }
+
+  /* ---------- Progress ring ---------- */
+  .pad .ring-wrap{
+    position: relative;
+    width: 62px;
+    height: 62px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .pad .ring{
+    position:absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+  .pad.playing .ring{ opacity: 1; }
+  .pad .ring circle{ fill: none; stroke-width: 3.5; }
+  .pad .ring .track{ stroke: rgba(0,0,0,0.2); }
+  .pad .ring .fill{ stroke: #fff; stroke-linecap: round; }
+
+  /* ---------- Reorder ---------- */
+  .pad.dragging{
+    transform: scale(1.08) !important;
+    z-index: 3;
+    box-shadow: 0 22px 40px -8px var(--glow, rgba(0,0,0,0.6)), 0 0 0 3px rgba(255,255,255,0.8);
+  }
+  .grid.reordering .pad:not(.dragging){ transform: scale(0.96); opacity: 0.8; }
+
+  /* ---------- Recorder ---------- */
+  .rec-center{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 12px;
+    padding: 6px 0 4px;
+  }
+  .rec-btn{
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.85);
+    background: transparent;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    touch-action: manipulation;
+  }
+  .rec-btn .core{
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--danger);
+    transition: all 180ms ease;
+  }
+  .rec-btn.recording .core{
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    animation: recpulse 1.2s ease-in-out infinite;
+  }
+  @keyframes recpulse{ 50%{ opacity: 0.6; } }
+  .rec-time{
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .rec-status{
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align:center;
+    min-height: 18px;
+  }
+  .modal-text{
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.45;
+    margin: -6px 0 4px;
+  }
+  .btn.danger{ background: rgba(255,92,114,0.18); color: #ff8a99; }
+  .btn.link-danger{
+    flex: none;
+    width: 100%;
+    margin-top: 10px;
+    background: transparent;
+    color: #ff8a99;
+    font-weight: 500;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    transform: translate(-50%, 20px);
+    background: #0f2140;
+    border: 1px solid rgba(255,255,255,0.14);
+    color: var(--text);
+    font-size: 14px;
+    padding: 11px 16px;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease, transform 180ms ease;
+    z-index: 20;
+    max-width: calc(100% - 32px);
+    text-align:center;
+  }
+  .toast.show{ opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- Legal ---------- */
+  .legal{
+    margin-top: 10px;
+    display:flex;
+    flex-wrap: wrap;
+    justify-content:center;
+    align-items:center;
+    gap: 4px 12px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    text-align:center;
+  }
+  .legal-link{
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    color: var(--text-dim);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .modal-card.terms{
+    max-width: 460px;
+    max-height: 82vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .terms-logo{
+    display:block;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 14px;
+    border-radius: 18px;
+    background: #fff;
+  }
+  .terms h3{
+    margin: 16px 0 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .terms p, .terms li{
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+  .terms p{ margin: 0 0 8px; }
+  .terms ul{ margin: 0 0 8px; padding-left: 18px; }
+  .terms a{ color: #8fe9df; }
+
+  /* ================= Davis Tech Support theme ================= */
+  :root{
+    --ink: #071226;
+    --navy: #0c1f3f;
+    --navy-2: #12305c;
+    --cyan: #33b0d6;
+    --cyan-soft: rgba(51,176,214,0.16);
+    --silver: #aab4c3;
+    --card: rgba(12,31,63,0.72);
+    --card-border: rgba(120,170,220,0.16);
+    --text: #eef4fb;
+    --text-dim: #9fb0c6;
+    --text-faint: #6d7f98;
+  }
+
+  html, body{ background: var(--ink); }
+
+  .blob.b1{ background: #1c4f93; opacity: 0.55; }
+  .blob.b2{ background: #1596c2; opacity: 0.35; }
+  .blob.b3{ background: #33b0d6; opacity: 0.12; }
+
+  .bg .circuit{
+    position:absolute;
+    inset:0;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='none' stroke='%2333b0d6' stroke-width='1.4'%3E%3Cpath d='M0 30h40l12 12v38M120 90H82l-14-14V0M60 120V96l10-10h50'/%3E%3Ccircle cx='52' cy='84' r='4'/%3E%3Ccircle cx='68' cy='4' r='4'/%3E%3Ccircle cx='40' cy='30' r='3'/%3E%3C/svg%3E");
+    background-size: 240px 240px;
+  }
+
+  /* Header */
+  .header{ margin-bottom: 22px; }
+  .title-row{
+    display:inline-flex;
+    align-items:center;
+    gap: 14px;
+    text-align:left;
+  }
+  .title-logo{
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    flex-shrink: 0;
+  }
+  .header h1{
+    font-size: clamp(30px, 6vw, 40px);
+    line-height: 1.05;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: #fff;
+    letter-spacing: -0.025em;
+  }
+  .byline{
+    margin-top: 3px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 0.01em;
+  }
+  .header p{ margin-top: 12px; font-size: 14px; }
+
+  /* Tabs */
+  .board-tab{ border-radius: 10px; }
+  .board-tab.active{
+    color: #06223a;
+    background: var(--cyan);
+    border-color: var(--cyan);
+  }
+
+  /* Controls */
+  .ctrl-btn, .master{ border-radius: 12px; background: var(--card); }
+  .ctrl-btn.stop{ background: rgba(255,92,114,0.16); }
+  .ctrl-btn.stop.live{ background: var(--danger); }
+
+  /* Deck */
+  .deck{
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(18,48,92,0.78), rgba(10,26,52,0.82));
+    border: 1px solid var(--card-border);
+    box-shadow: 0 24px 50px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+    padding: 18px;
+  }
+
+  /* Pads */
+  .pad{
+    border-radius: 16px;
+    box-shadow:
+      0 10px 20px -8px var(--glow, rgba(0,0,0,0.4)),
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -3px 0 rgba(0,0,0,0.14);
+  }
+  .pad.playing{
+    box-shadow:
+      0 0 0 3px var(--cyan),
+      0 14px 30px -6px var(--glow, rgba(0,0,0,0.5)),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .pad .label{ font-size: 13.5px; }
+
+  .add-tile{
+    border-radius: 16px;
+    border-color: rgba(51,176,214,0.35);
+    background: rgba(51,176,214,0.05);
+  }
+  .add-tile:hover{ border-color: var(--cyan); background: var(--cyan-soft); }
+
+  .empty .icon-wrap{ background: var(--cyan-soft); }
+
+  /* Buttons + modals */
+  .btn.primary{ background: var(--cyan); color: #06223a; }
+  .modal-card{ border-radius: 18px; border-color: rgba(120,170,220,0.2); }
+  .field input[type="text"]{ background: rgba(255,255,255,0.06); }
+  .field input[type="text"]:focus{ border-color: var(--cyan); }
+  .toast{ border-color: rgba(51,176,214,0.35); }
+
+  /* Footer */
+  .brand-footer .brand-text b{ color: var(--silver); }
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="circuit"></div>
+</div>
+
+<div class="unit">
+
+  <div class="header">
+    <div class="title-row">
+      <img class="title-logo" src="logo-mark.png" alt="">
+      <div>
+        <h1>Soundboard</h1>
+        <div class="byline">by Davis Tech Support</div>
+      </div>
+    </div>
+    <p id="hint">Tap a pad to play. Tap it again to stop.</p>
+  </div>
+
+  <div class="boards" id="boards" role="tablist" aria-label="Boards"></div>
+
+  <div class="controls">
+    <button type="button" class="ctrl-btn stop" id="stopAll" aria-label="Stop all sounds">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+      <span class="txt">Stop all</span>
+    </button>
+    <label class="master" aria-label="Master volume">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <input type="range" id="masterVol" min="0" max="100" value="100">
+      <span class="val" id="masterVal">100%</span>
+    </label>
+    <button type="button" class="ctrl-btn lock" id="lockBtn" aria-label="Lock board"></button>
+  </div>
+
+  <div class="deck" id="deck">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="brand-footer">
+    <span class="brand-text">Created by <b>Davis Tech Support</b></span>
+  </div>
+  <div class="legal">
+    <span>&copy; 2026 Davis Tech Support. All rights reserved.</span>
+    <button type="button" class="legal-link" id="termsLink">Terms of use</button>
+  </div>
+
+  <input type="file" id="fileInput" accept="audio/*,video/mp4,.mp4,.mov,.m4v" multiple class="sr-only" aria-hidden="true" tabindex="-1">
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const grid = document.getElementById('grid');
+  const deck = document.getElementById('deck');
+  const fileInput = document.getElementById('fileInput');
+  const boardsEl = document.getElementById('boards');
+  const hintEl = document.getElementById('hint');
+  const stopBtn = document.getElementById('stopAll');
+  const masterInput = document.getElementById('masterVol');
+  const masterVal = document.getElementById('masterVal');
+  const lockBtn = document.getElementById('lockBtn');
+  const toastEl = document.getElementById('toast');
+
+  const SWATCHES = [
+    { grad: 'linear-gradient(155deg, #ff8a5c, #ff5c72)', glow: 'rgba(255,92,114,0.55)', chip: '#ff6b7a' },
+    { grad: 'linear-gradient(155deg, #6fd8ff, #6c7bff)', glow: 'rgba(108,123,255,0.55)', chip: '#6c9cff' },
+    { grad: 'linear-gradient(155deg, #c37bff, #ff6ee0)', glow: 'rgba(255,110,224,0.5)', chip: '#cd7bff' },
+    { grad: 'linear-gradient(155deg, #7dffc4, #12b3a8)', glow: 'rgba(18,179,168,0.55)', chip: '#2fd0b8' },
+    { grad: 'linear-gradient(155deg, #ffd66e, #ff9f5c)', glow: 'rgba(255,159,92,0.5)', chip: '#ffb96e' },
+    { grad: 'linear-gradient(155deg, #7de9ff, #5c9fff)', glow: 'rgba(92,159,255,0.5)', chip: '#6fc4ff' },
+    { grad: 'linear-gradient(155deg, #ff9ecb, #ff5c8a)', glow: 'rgba(255,92,138,0.5)', chip: '#ff85ac' },
+    { grad: 'linear-gradient(155deg, #c6ff7d, #4cd97a)', glow: 'rgba(76,217,122,0.5)', chip: '#94e678' }
+  ];
+
+  const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="none"><path d="M8 5.5v13l11-6.5-11-6.5z" fill="currentColor"/></svg>';
+  const GEAR_ICON = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.7 1.7 0 00.34 1.87l.06.06a2.06 2.06 0 11-2.92 2.92l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V19.6a2.06 2.06 0 11-4.12 0v-.09a1.7 1.7 0 00-1.11-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2.06 2.06 0 11-2.92-2.92l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H4.4a2.06 2.06 0 110-4.12h.09a1.7 1.7 0 001.55-1.11 1.7 1.7 0 00-.34-1.87l-.06-.06A2.06 2.06 0 118.56 2.9l.06.06a1.7 1.7 0 001.87.34H10.6a1.7 1.7 0 001-1.55V1.66a2.06 2.06 0 114.12 0v.09a1.7 1.7 0 001 1.55h.11a1.7 1.7 0 001.87-.34l.06-.06a2.06 2.06 0 112.92 2.92l-.06.06a1.7 1.7 0 00-.34 1.87v.11a1.7 1.7 0 001.55 1H21.6a2.06 2.06 0 110 4.12h-.09a1.7 1.7 0 00-1.55 1z" stroke="currentColor" stroke-width="1.2"/></svg>';
+  const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const LOCK_OPEN = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 11V7.5a3.5 3.5 0 016.8-1.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const LOCK_SHUT = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8.5 11V7.5a3.5 3.5 0 017 0V11" stroke="currentColor" stroke-width="1.8"/></svg>';
+  const MIC_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+  const RING_R = 28;
+  const RING_C = 2 * Math.PI * RING_R;
+
+  /* ---------- State ---------- */
+  // state.boards: [{ id, name, pads: [{ id, name, style, volume, hotkey }] }]
+  let state = { boards: [], activeId: null, master: 1, locked: false };
+  // pads: live pads for the board on screen (adds url, audio, gain)
+  let pads = [];
+  let playingId = null;
+  let editingId = null;
+  let pendingCustomHex = null;
+  let loadToken = 0;
+  let boardLoading = false;
+
+  const modalRoot = document.createElement('div');
+  document.body.appendChild(modalRoot);
+
+  function makeId(prefix){
+    return (prefix || 'p') + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+  function cleanName(filename){
+    const noExt = filename.replace(/\.[^/.]+$/, '');
+    return noExt.length ? noExt : filename;
+  }
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function shade(hex, percent){
+    const num = parseInt(hex.replace('#',''), 16);
+    let r = (num >> 16) + Math.round(255 * percent);
+    let g = ((num >> 8) & 0x00FF) + Math.round(255 * percent);
+    let b = (num & 0x0000FF) + Math.round(255 * percent);
+    r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+    return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+  }
+  function hexToRgba(hex, alpha){
+    const num = parseInt(hex.replace('#',''), 16);
+    return `rgba(${(num >> 16) & 0xFF},${(num >> 8) & 0xFF},${num & 0xFF},${alpha})`;
+  }
+  function styleFromHex(hex){
+    return { grad: `linear-gradient(155deg, ${shade(hex, 0.22)}, ${shade(hex, -0.12)})`, glow: hexToRgba(hex, 0.55), chip: hex };
+  }
+
+  let toastTimer = null;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  /* ---------- Saved library (IndexedDB) ---------- */
+  let dbPromise = null;
+  function openDB(){
+    if(dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      if(!('indexedDB' in window)){ reject(new Error('no-idb')); return; }
+      const req = indexedDB.open('dts-soundboard', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains('clips')) db.createObjectStore('clips');
+        if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbPromise;
+  }
+  function idb(store, mode, fn){
+    return openDB().then(db => new Promise((resolve, reject) => {
+      const tx = db.transaction(store, mode);
+      const r = fn(tx.objectStore(store));
+      tx.oncomplete = () => resolve(r && 'result' in r ? r.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    }));
+  }
+  function activeBoard(){
+    return state.boards.find(b => b.id === state.activeId);
+  }
+  function saveState(){
+    const board = activeBoard();
+    if(board && !boardLoading) board.pads = pads.map(p => ({ id: p.id, name: p.name, style: p.style, volume: p.volume, hotkey: p.hotkey }));
+    const copy = JSON.parse(JSON.stringify(state));
+    return idb('meta', 'readwrite', s => s.put(copy, 'state')).catch(showStorageError);
+  }
+  function saveClip(id, blob, name){
+    // Stored as raw bytes + type; more reliable across Safari versions than storing Blobs directly.
+    return blob.arrayBuffer().then(buf =>
+      idb('clips', 'readwrite', s => s.put({ buf, type: blob.type || guessType(name || '') }, id))
+    );
+  }
+  function deleteClip(id){
+    return idb('clips', 'readwrite', s => s.delete(id)).catch(() => {});
+  }
+  function guessType(name){
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    return ({ mp3:'audio/mpeg', wav:'audio/wav', ogg:'audio/ogg', m4a:'audio/mp4', aac:'audio/aac',
+              flac:'audio/flac', webm:'audio/webm', mp4:'video/mp4', m4v:'video/mp4', mov:'video/quicktime' })[ext] || '';
+  }
+  let storageErrorShown = false;
+  function showStorageError(){
+    if(storageErrorShown) return;
+    storageErrorShown = true;
+    alert('Some sounds could not be saved on this device. The device may be low on storage. Your pads will work now but may not be there next time.');
+  }
+
+  /* ---------- Audio (Web Audio so volume works on iPhone too) ---------- */
+  let actx = null, masterGain = null;
+  function ensureAudio(){
+    if(actx) return actx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
+    try{
+      actx = new AC();
+      masterGain = actx.createGain();
+      masterGain.gain.value = state.master;
+      masterGain.connect(actx.destination);
+    }catch(e){ actx = null; }
+    return actx;
+  }
+  function routePad(pad){
+    if(pad.gain || !ensureAudio()) return;
+    try{
+      const src = actx.createMediaElementSource(pad.audio);
+      pad.gain = actx.createGain();
+      src.connect(pad.gain);
+      pad.gain.connect(masterGain);
+    }catch(e){ pad.gain = null; }
+  }
+  function applyVolume(pad){
+    if(pad.gain){
+      pad.gain.gain.value = pad.volume;
+      pad.audio.volume = 1;
+    } else {
+      pad.audio.volume = Math.max(0, Math.min(1, pad.volume * state.master));
+    }
+  }
+  function setMaster(v){
+    state.master = v;
+    if(masterGain) masterGain.gain.value = v;
+    pads.forEach(p => { if(!p.gain) applyVolume(p); });
+    masterInput.value = Math.round(v * 100);
+    masterVal.textContent = Math.round(v * 100) + '%';
+  }
+
+  function buildPad(meta, blob){
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.preload = 'auto';
+    const pad = Object.assign({}, meta, { url, audio, gain: null });
+    audio.addEventListener('ended', () => { if(playingId === pad.id) setPlaying(null); });
+    return pad;
+  }
+  function disposePads(){
+    pads.forEach(p => {
+      p.audio.pause();
+      try{ if(p.gain) p.gain.disconnect(); }catch(e){}
+      URL.revokeObjectURL(p.url);
+    });
+    pads = [];
+  }
+
+  /* ---------- Loading boards ---------- */
+  async function loadLibrary(){
+    try{
+      let saved = await idb('meta', 'readonly', s => s.get('state'));
+      if(!saved){
+        const oldPads = await idb('meta', 'readonly', s => s.get('pads'));
+        saved = { boards: [{ id: makeId('b'), name: 'Main', pads: oldPads || [] }], master: 1, locked: false };
+        saved.activeId = saved.boards[0].id;
+      }
+      state = Object.assign(state, saved);
+    }catch(err){
+      console.warn('Could not load saved boards', err);
+    }
+    if(!state.boards.length){
+      const b = { id: makeId('b'), name: 'Main', pads: [] };
+      state.boards = [b];
+      state.activeId = b.id;
+    }
+    if(!activeBoard()) state.activeId = state.boards[0].id;
+    setMaster(state.master ?? 1);
+    applyLock();
+    await loadBoard(state.activeId);
+    if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  }
+
+  async function loadBoard(id){
+    const token = ++loadToken;
+    boardLoading = true;
+    stopAll();
+    disposePads();
+    state.activeId = id;
+    renderBoards();
+    grid.innerHTML = '';
+    const board = activeBoard();
+    const loaded = [];
+    for(const meta of board.pads){
+      try{
+        const clip = await idb('clips', 'readonly', s => s.get(meta.id));
+        if(!clip || !clip.buf) continue;
+        loaded.push(buildPad(meta, new Blob([clip.buf], { type: clip.type || '' })));
+      }catch(e){}
+    }
+    if(token !== loadToken){ loaded.forEach(p => URL.revokeObjectURL(p.url)); return; }
+    pads = loaded;
+    boardLoading = false;
+    renderGrid();
+  }
+
+  function switchBoard(id){
+    if(id === state.activeId) return;
+    saveState();
+    loadBoard(id).then(saveState);
+  }
+
+  /* ---------- Adding sounds ---------- */
+  function addFiles(fileList){
+    if(state.locked) return;
+    const files = Array.from(fileList).filter(f =>
+      f.type.startsWith('audio/') || f.type.startsWith('video/') ||
+      /\.(mp3|wav|ogg|m4a|aac|flac|webm|mp4|mov|m4v)$/i.test(f.name)
+    );
+    if(!files.length) return;
+    const saves = files.map(file => addPad(cleanName(file.name), file, file.name, false));
+    renderGrid();
+    Promise.all(saves).then(saveState).catch(showStorageError);
+  }
+
+  function addPad(name, blob, filename, render){
+    const meta = { id: makeId(), name, style: SWATCHES[pads.length % SWATCHES.length], volume: 1, hotkey: '' };
+    pads.push(buildPad(meta, blob));
+    const p = saveClip(meta.id, blob, filename);
+    if(render){
+      renderGrid();
+      p.then(saveState).catch(showStorageError);
+    }
+    return p;
+  }
+
+  function removePad(id){
+    const idx = pads.findIndex(p => p.id === id);
+    if(idx === -1) return;
+    const pad = pads[idx];
+    pad.audio.pause();
+    try{ if(pad.gain) pad.gain.disconnect(); }catch(e){}
+    URL.revokeObjectURL(pad.url);
+    if(playingId === id) setPlaying(null);
+    pads.splice(idx, 1);
+    renderGrid();
+    deleteClip(id);
+    saveState();
+  }
+
+  /* ---------- Playback ---------- */
+  function togglePlay(id){
+    const pad = pads.find(p => p.id === id);
+    if(!pad) return;
+
+    if(playingId === id){
+      pad.audio.pause();
+      pad.audio.currentTime = 0;
+      setPlaying(null);
+      return;
+    }
+    if(playingId){
+      const prev = pads.find(p => p.id === playingId);
+      if(prev){ prev.audio.pause(); prev.audio.currentTime = 0; }
+    }
+    if(ensureAudio() && actx.state !== 'running') actx.resume().catch(() => {});
+    routePad(pad);
+    applyVolume(pad);
+    pad.audio.currentTime = 0;
+    pad.audio.play().catch(() => {});
+    setPlaying(id);
+  }
+
+  function stopAll(){
+    pads.forEach(p => { if(!p.audio.paused){ p.audio.pause(); } p.audio.currentTime = 0; });
+    setPlaying(null);
+  }
+
+  function setPlaying(id){
+    playingId = id;
+    stopBtn.classList.toggle('live', !!id);
+    document.querySelectorAll('.pad').forEach(el => {
+      const isPlaying = el.dataset.id === id;
+      el.classList.toggle('playing', isPlaying);
+      const iconSlot = el.querySelector('.icon-slot');
+      if(iconSlot) iconSlot.innerHTML = isPlaying ? eqBars() : `<span class="icon">${PLAY_ICON}</span>`;
+      const fill = el.querySelector('.ring .fill');
+      if(fill && !isPlaying) fill.style.strokeDashoffset = RING_C;
+    });
+    if(id) requestAnimationFrame(tickRing);
+  }
+
+  function tickRing(){
+    if(!playingId) return;
+    const pad = pads.find(p => p.id === playingId);
+    const fill = grid.querySelector(`.pad[data-id="${playingId}"] .ring .fill`);
+    if(pad && fill){
+      const d = pad.audio.duration;
+      const t = (d && isFinite(d)) ? Math.min(1, pad.audio.currentTime / d) : 0;
+      fill.style.strokeDashoffset = RING_C * (1 - t);
+    }
+    requestAnimationFrame(tickRing);
+  }
+
+  function eqBars(){
+    return '<span class="eq">' + [0,1,2,3,4].map(() => '<span></span>').join('') + '</span>';
+  }
+
+  /* ---------- Rendering ---------- */
+  function renderBoards(){
+    boardsEl.innerHTML = '';
+    state.boards.forEach(b => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'board-tab' + (b.id === state.activeId ? ' active' : '');
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', b.id === state.activeId ? 'true' : 'false');
+      tab.innerHTML = `<span>${escapeHtml(b.name)}</span>${b.id === state.activeId ? '<span class="dots" aria-hidden="true">···</span>' : ''}`;
+      tab.addEventListener('click', () => {
+        if(b.id === state.activeId){ if(!state.locked) openBoardEditor(b.id); }
+        else switchBoard(b.id);
+      });
+      boardsEl.appendChild(tab);
+    });
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'board-tab add';
+    add.textContent = '+ New board';
+    add.addEventListener('click', openNewBoard);
+    boardsEl.appendChild(add);
+    const active = boardsEl.querySelector('.board-tab.active');
+    if(active) active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
+  function renderGrid(){
+    grid.innerHTML = '';
+
+    if(pads.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.innerHTML = `
+        <div class="icon-wrap">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M9 18V5l12-2v13" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="6" cy="18" r="3" stroke="white" stroke-width="1.6"/>
+            <circle cx="18" cy="16" r="3" stroke="white" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <p>No pads on this board yet</p>
+        <div class="sub">${state.locked ? 'Unlock to add sounds' : 'Add a sound or record one below'}</div>`;
+      grid.appendChild(empty);
+    }
+
+    pads.forEach(pad => {
+      const btn = document.createElement('button');
+      btn.className = 'pad';
+      btn.type = 'button';
+      btn.dataset.id = pad.id;
+      btn.style.setProperty('--grad', pad.style.grad);
+      btn.style.setProperty('--glow', pad.style.glow);
+      btn.setAttribute('aria-label', 'Play ' + pad.name);
+      btn.title = pad.name;
+      const isPlaying = playingId === pad.id;
+
+      btn.innerHTML = `
+        <span class="led" aria-hidden="true"></span>
+        <span class="toolbar">
+          <button type="button" class="edit" aria-label="Edit ${escapeHtml(pad.name)}">${GEAR_ICON}</button>
+          <button type="button" class="remove" aria-label="Remove ${escapeHtml(pad.name)}">${CLOSE_ICON}</button>
+        </span>
+        <span class="ring-wrap">
+          <svg class="ring" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="track" cx="32" cy="32" r="${RING_R}"/>
+            <circle class="fill" cx="32" cy="32" r="${RING_R}" stroke-dasharray="${RING_C}" style="stroke-dashoffset:${RING_C}"/>
+          </svg>
+          <span class="icon-slot">${isPlaying ? eqBars() : `<span class="icon">${PLAY_ICON}</span>`}</span>
+        </span>
+        <span class="label">${escapeHtml(pad.name)}</span>
+        ${pad.hotkey ? `<span class="hotkey">${escapeHtml(pad.hotkey)}</span>` : ''}`;
+
+      if(isPlaying) btn.classList.add('playing');
+
+      btn.addEventListener('click', (e) => {
+        if(e.target.closest('.toolbar')) return;
+        if(Date.now() < suppressClickUntil) return;
+        togglePlay(pad.id);
+      });
+      btn.addEventListener('pointerdown', (e) => onPadPointerDown(e, pad.id, btn));
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
+      btn.querySelector('.remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmDialog(`Delete "${pad.name}"?`, 'This removes the sound from this device.', 'Delete', () => removePad(pad.id));
+      });
+      btn.querySelector('.edit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditor(pad.id);
+      });
+      grid.appendChild(btn);
+    });
+
+    const addTile = document.createElement('button');
+    addTile.type = 'button';
+    addTile.className = 'add-tile';
+    addTile.setAttribute('aria-label', 'Add sound clips');
+    addTile.innerHTML = '<span class="plus-ring" aria-hidden="true">+</span><span class="add-label">Add sound</span>';
+    addTile.addEventListener('click', () => fileInput.click());
+    grid.appendChild(addTile);
+
+    const recTile = document.createElement('button');
+    recTile.type = 'button';
+    recTile.className = 'add-tile';
+    recTile.setAttribute('aria-label', 'Record a sound');
+    recTile.innerHTML = `<span class="plus-ring" aria-hidden="true">${MIC_ICON}</span><span class="add-label">Record</span>`;
+    recTile.addEventListener('click', openRecorder);
+    grid.appendChild(recTile);
+
+    if(playingId) requestAnimationFrame(tickRing);
+  }
+
+  /* ---------- Reorder (press and hold, then drag) ---------- */
+  let drag = null;
+  let suppressClickUntil = 0;
+
+  function onPadPointerDown(e, id, el){
+    if(state.locked || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if(e.target.closest('.toolbar')) return;
+    const d = { id, el, x: e.clientX, y: e.clientY, pointerId: e.pointerId, active: false };
+    d.timer = setTimeout(() => {
+      d.active = true;
+      el.classList.add('dragging');
+      grid.classList.add('reordering');
+      try{ el.setPointerCapture(d.pointerId); }catch(err){}
+      if(navigator.vibrate) navigator.vibrate(15);
+    }, 380);
+    drag = d;
+  }
+
+  document.addEventListener('pointermove', (e) => {
+    if(!drag || e.pointerId !== drag.pointerId) return;
+    if(!drag.active){
+      if(Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 10){ clearTimeout(drag.timer); drag = null; }
+      return;
+    }
+    e.preventDefault();
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const target = under && under.closest('.pad');
+    if(!target || target === drag.el || !grid.contains(target)) return;
+    const from = pads.findIndex(p => p.id === drag.id);
+    const to = pads.findIndex(p => p.id === target.dataset.id);
+    if(from < 0 || to < 0) return;
+    const [moved] = pads.splice(from, 1);
+    pads.splice(to, 0, moved);
+    if(from < to) target.after(drag.el); else target.before(drag.el);
+  });
+
+  function endDrag(e){
+    if(!drag || (e && e.pointerId !== drag.pointerId)) return;
+    clearTimeout(drag.timer);
+    if(drag.active){
+      drag.el.classList.remove('dragging');
+      grid.classList.remove('reordering');
+      suppressClickUntil = Date.now() + 450;
+      saveState();
+    }
+    drag = null;
+  }
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+  document.addEventListener('touchmove', (e) => { if(drag && drag.active) e.preventDefault(); }, { passive: false });
+
+  /* ---------- Lock mode ---------- */
+  function applyLock(){
+    document.body.classList.toggle('locked', state.locked);
+    lockBtn.classList.toggle('on', state.locked);
+    lockBtn.innerHTML = state.locked ? LOCK_SHUT : LOCK_OPEN;
+    lockBtn.setAttribute('aria-label', state.locked ? 'Board locked. Press and hold to unlock' : 'Lock board');
+    hintEl.textContent = state.locked
+      ? 'Tap a pad to play. Tap it again to stop.'
+      : 'Tap a pad to play. Hold and drag to move it.';
+  }
+
+  let lockHold = null;
+  let justUnlocked = false;
+  lockBtn.addEventListener('pointerdown', () => {
+    if(!state.locked) return;
+    lockBtn.classList.add('holding');
+    lockHold = setTimeout(() => {
+      lockHold = null;
+      lockBtn.classList.remove('holding');
+      state.locked = false;
+      justUnlocked = true;
+      applyLock();
+      renderGrid();
+      saveState();
+      toast('Unlocked');
+      if(navigator.vibrate) navigator.vibrate(20);
+    }, 900);
+  });
+  ['pointerup','pointerleave','pointercancel'].forEach(evt => lockBtn.addEventListener(evt, () => {
+    if(lockHold){ clearTimeout(lockHold); lockHold = null; }
+    lockBtn.classList.remove('holding');
+  }));
+  lockBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+  lockBtn.addEventListener('click', () => {
+    if(justUnlocked){ justUnlocked = false; return; }
+    if(state.locked){ toast('Press and hold the lock to unlock'); return; }
+    state.locked = true;
+    applyLock();
+    renderGrid();
+    saveState();
+    toast('Locked. Press and hold the lock to unlock.');
+  });
+
+  /* ---------- Controls ---------- */
+  stopBtn.addEventListener('click', stopAll);
+  masterInput.addEventListener('input', () => setMaster(Number(masterInput.value) / 100));
+  masterInput.addEventListener('change', saveState);
+
+  /* ---------- Modals ---------- */
+  function showModal(html, extraClass){
+    modalRoot.innerHTML = `<div class="modal-overlay" id="modalOverlay"><div class="modal-card ${extraClass || ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+    const overlay = document.getElementById('modalOverlay');
+    overlay.addEventListener('click', (e) => { if(e.target === overlay) closeModal(); });
+    return modalRoot;
+  }
+  let onModalClose = null;
+  function closeModal(){
+    const cb = onModalClose;
+    onModalClose = null;
+    editingId = null;
+    modalRoot.innerHTML = '';
+    if(cb) cb();
+  }
+
+  function confirmDialog(title, text, okLabel, onOk){
+    showModal(`
+      <h2>${escapeHtml(title)}</h2>
+      <p class="modal-text">${escapeHtml(text)}</p>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="mCancel">Cancel</button>
+        <button type="button" class="btn danger" id="mOk">${escapeHtml(okLabel)}</button>
+      </div>`);
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    document.getElementById('mOk').addEventListener('click', () => { closeModal(); onOk(); });
+  }
+
+  /* Terms of use */
+  function openTerms(){
+    showModal(`
+      <img class="terms-logo" src="logo-full.png" alt="Davis Tech Support logo">
+      <h2>Terms of use</h2>
+      <p>&copy; 2026 Davis Tech Support (Michael Davis). All rights reserved. This app, including its code, design, name, and the Davis Tech Support name and logo, is owned by Davis Tech Support and protected by copyright and trademark law.</p>
+      <h3>Your license</h3>
+      <p>You may install and use this app as published by Davis Tech Support. This is a personal, non-transferable license that can be revoked. No other rights are granted.</p>
+      <h3>Not allowed without written permission</h3>
+      <ul>
+        <li>Copying, modifying, or making your own version of the app or its code</li>
+        <li>Hosting, mirroring, or redistributing it anywhere else</li>
+        <li>Selling it, reselling it, or charging for access to it</li>
+        <li>Rebranding it, presenting it as your own, or building it into another product or service</li>
+        <li>Removing or changing any copyright, trademark, or credit notices</li>
+      </ul>
+      <h3>Your sounds</h3>
+      <p>Sounds you add or record stay on your device and are not collected by Davis Tech Support. You are responsible for having the right to use them.</p>
+      <h3>No warranty</h3>
+      <p>The app is provided as is, without warranty of any kind. To the fullest extent allowed by law, Davis Tech Support is not liable for any damages or lost data from using it. Keep copies of your original sound files.</p>
+      <h3>Enforcement</h3>
+      <p>Any unauthorized use ends your license immediately and may lead to takedown requests, including under the DMCA, and other legal action. These terms are governed by the laws of the Commonwealth of Virginia.</p>
+      <p>For licensing or permission, contact <a href="mailto:davis.tech.va@gmail.com">davis.tech.va@gmail.com</a>.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn primary" id="mCancel">Close</button>
+      </div>`, 'terms');
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+  }
+  document.getElementById('termsLink').addEventListener('click', openTerms);
+
+  /* Pad editor */
+  function openEditor(id){
+    const pad = pads.find(p => p.id === id);
+    if(!pad) return;
+    editingId = id;
+    pendingCustomHex = null;
+    const swatchesHtml = SWATCHES.map((s, i) =>
+      `<button type="button" class="swatch ${pad.style.chip === s.chip ? 'selected' : ''}" data-swatch="${i}" style="background:${s.chip}" aria-label="Color option ${i + 1}"></button>`
+    ).join('');
+
+    showModal(`
+      <h2>Edit pad</h2>
+      <div class="field">
+        <label for="padName">Name</label>
+        <input type="text" id="padName" maxlength="40" value="${escapeHtml(pad.name)}">
+      </div>
+      <div class="field">
+        <label>Color</label>
+        <div class="swatches">
+          ${swatchesHtml}
+          <button type="button" class="swatch custom" aria-label="Custom color">
+            <input type="color" id="customColor" value="${pad.style.chip && pad.style.chip.startsWith('#') ? pad.style.chip : '#33b0d6'}">
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="padVolume">Volume</label>
+        <div class="volume-row">
+          <input type="range" id="padVolume" min="0" max="100" value="${Math.round(pad.volume * 100)}">
+          <span class="volume-value" id="volumeValue">${Math.round(pad.volume * 100)}%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="padHotkey">Keyboard shortcut (optional)</label>
+        <input type="text" id="padHotkey" class="hotkey-input" maxlength="1" value="${escapeHtml(pad.hotkey)}">
+        <div class="hint">Press this key to trigger the pad</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="cancelEdit">Cancel</button>
+        <button type="button" class="btn primary" id="saveEdit">Save</button>
+      </div>`);
+
+    const originalStyle = pad.style;
+    let saved = false;
+    onModalClose = () => { if(!saved) pad.style = originalStyle; };
+
+    // Update the color highlight in place so the name, volume and hotkey fields keep what was typed.
+    const presetSwatches = modalRoot.querySelectorAll('.swatch[data-swatch]');
+    presetSwatches.forEach(el => {
+      el.addEventListener('click', () => {
+        pad.style = SWATCHES[Number(el.dataset.swatch)];
+        presetSwatches.forEach(s => s.classList.toggle('selected', s === el));
+      });
+    });
+    document.getElementById('customColor').addEventListener('input', (e) => {
+      pad.style = styleFromHex(e.target.value);
+      presetSwatches.forEach(s => s.classList.remove('selected'));
+    });
+
+    const volumeInput = document.getElementById('padVolume');
+    const volumeValue = document.getElementById('volumeValue');
+    volumeInput.addEventListener('input', () => { volumeValue.textContent = volumeInput.value + '%'; });
+
+    const hotkeyInput = document.getElementById('padHotkey');
+    hotkeyInput.addEventListener('keydown', (e) => e.stopPropagation());
+    hotkeyInput.addEventListener('input', () => { hotkeyInput.value = hotkeyInput.value.slice(-1).toUpperCase(); });
+
+    document.getElementById('cancelEdit').addEventListener('click', closeModal);
+    document.getElementById('saveEdit').addEventListener('click', () => {
+      saved = true;
+      const newName = document.getElementById('padName').value.trim();
+      if(newName.length) pad.name = newName;
+      pad.volume = Number(volumeInput.value) / 100;
+      applyVolume(pad);
+      const newHotkey = hotkeyInput.value.trim().toUpperCase();
+      if(newHotkey){
+        const conflict = pads.find(p => p.id !== pad.id && p.hotkey === newHotkey);
+        if(conflict) conflict.hotkey = '';
+      }
+      pad.hotkey = newHotkey;
+      closeModal();
+      renderGrid();
+      saveState();
+    });
+  }
+
+  /* Boards */
+  function openNewBoard(){
+    if(state.locked) return;
+    showModal(`
+      <h2>New board</h2>
+      <div class="field">
+        <label for="boardName">Board name</label>
+        <input type="text" id="boardName" maxlength="30" placeholder="Board ${state.boards.length + 1}">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="mCancel">Cancel</button>
+        <button type="button" class="btn primary" id="mOk">Create board</button>
+      </div>`);
+    const input = document.getElementById('boardName');
+    const create = () => {
+      const name = input.value.trim() || `Board ${state.boards.length + 1}`;
+      saveState();
+      const b = { id: makeId('b'), name, pads: [] };
+      state.boards.push(b);
+      closeModal();
+      loadBoard(b.id).then(saveState);
+    };
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    document.getElementById('mOk').addEventListener('click', create);
+    input.addEventListener('keydown', (e) => { e.stopPropagation(); if(e.key === 'Enter') create(); });
+    input.focus();
+  }
+
+  function openBoardEditor(id){
+    const board = state.boards.find(b => b.id === id);
+    if(!board) return;
+    const canDelete = state.boards.length > 1;
+    showModal(`
+      <h2>Board settings</h2>
+      <div class="field">
+        <label for="boardName">Board name</label>
+        <input type="text" id="boardName" maxlength="30" value="${escapeHtml(board.name)}">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="mCancel">Cancel</button>
+        <button type="button" class="btn primary" id="mOk">Save</button>
+      </div>
+      ${canDelete ? '<button type="button" class="btn link-danger" id="mDelete">Delete this board</button>' : ''}`);
+    const input = document.getElementById('boardName');
+    const save = () => {
+      const name = input.value.trim();
+      if(name) board.name = name;
+      closeModal();
+      renderBoards();
+      saveState();
+    };
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    document.getElementById('mOk').addEventListener('click', save);
+    input.addEventListener('keydown', (e) => { e.stopPropagation(); if(e.key === 'Enter') save(); });
+    if(canDelete){
+      document.getElementById('mDelete').addEventListener('click', () => {
+        const count = (board.id === state.activeId ? pads.length : board.pads.length);
+        confirmDialog(`Delete "${board.name}"?`, `This deletes the board and its ${count} ${count === 1 ? 'sound' : 'sounds'} from this device.`, 'Delete board', () => deleteBoard(board.id));
+      });
+    }
+  }
+
+  function deleteBoard(id){
+    if(state.boards.length < 2) return;
+    saveState();
+    const board = state.boards.find(b => b.id === id);
+    board.pads.forEach(p => deleteClip(p.id));
+    state.boards = state.boards.filter(b => b.id !== id);
+    if(state.activeId === id){
+      disposePads();
+      loadBoard(state.boards[0].id).then(saveState);
+    } else {
+      renderBoards();
+      saveState();
+    }
+  }
+
+  /* Recorder */
+  function pickRecType(){
+    if(!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    return ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  }
+
+  function openRecorder(){
+    if(state.locked) return;
+    stopAll();
+    showModal(`
+      <h2>Record a sound</h2>
+      <div class="rec-center">
+        <button type="button" class="rec-btn" id="recBtn" aria-label="Start recording"><span class="core"></span></button>
+        <div class="rec-time" id="recTime">0:00</div>
+        <div class="rec-status" id="recStatus">Tap to start recording</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="mCancel">Cancel</button>
+      </div>`);
+
+    const recBtn = document.getElementById('recBtn');
+    const recTime = document.getElementById('recTime');
+    const recStatus = document.getElementById('recStatus');
+    let stream = null, recorder = null, chunks = [], timer = null, started = 0, keep = false;
+    const MAX_SECONDS = 120;
+
+    const cleanup = () => {
+      clearInterval(timer);
+      if(recorder && recorder.state !== 'inactive'){ try{ recorder.stop(); }catch(e){} }
+      if(stream) stream.getTracks().forEach(t => t.stop());
+    };
+    onModalClose = cleanup;
+
+    document.getElementById('mCancel').addEventListener('click', () => { keep = false; closeModal(); });
+
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
+      recStatus.textContent = 'Recording isn\u2019t supported in this browser.';
+      recBtn.disabled = true;
+      recBtn.style.opacity = 0.4;
+      return;
+    }
+
+    recBtn.addEventListener('click', async () => {
+      if(recorder && recorder.state === 'recording'){
+        keep = true;
+        recorder.stop();
+        return;
+      }
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }catch(err){
+        recStatus.textContent = 'Microphone access was blocked. Allow it in your settings, then try again.';
+        return;
+      }
+      const type = pickRecType();
+      try{
+        recorder = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
+      }catch(err){
+        recorder = new MediaRecorder(stream);
+      }
+      chunks = [];
+      recorder.ondataavailable = (e) => { if(e.data && e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        clearInterval(timer);
+        if(stream) stream.getTracks().forEach(t => t.stop());
+        if(!keep || !chunks.length) return;
+        const blob = new Blob(chunks, { type: recorder.mimeType || type || 'audio/mp4' });
+        const n = pads.filter(p => /^Recording \d+$/.test(p.name)).length + 1;
+        keep = false;
+        closeModal();
+        addPad(`Recording ${n}`, blob, '', true);
+        toast(`Added Recording ${n}`);
+      };
+      recorder.start();
+      started = Date.now();
+      recBtn.classList.add('recording');
+      recBtn.setAttribute('aria-label', 'Stop recording');
+      recStatus.textContent = 'Recording. Tap to stop and save.';
+      timer = setInterval(() => {
+        const s = Math.floor((Date.now() - started) / 1000);
+        recTime.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+        if(s >= MAX_SECONDS && recorder.state === 'recording'){ keep = true; recorder.stop(); }
+      }, 250);
+    });
+  }
+
+  /* ---------- Input ---------- */
+  fileInput.addEventListener('change', (e) => {
+    addFiles(e.target.files);
+    fileInput.value = '';
+  });
+
+  ['dragenter','dragover'].forEach(evt => {
+    deck.addEventListener(evt, (e) => {
+      e.preventDefault();
+      if(!state.locked) deck.classList.add('drag-over');
+    });
+  });
+  ['dragleave','drop'].forEach(evt => {
+    deck.addEventListener(evt, (e) => {
+      e.preventDefault();
+      if(evt === 'drop'){
+        deck.classList.remove('drag-over');
+        if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+      } else if(e.target === deck){
+        deck.classList.remove('drag-over');
+      }
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(modalRoot.innerHTML){
+      if(e.key === 'Escape') closeModal();
+      return;
+    }
+    const tag = (e.target && e.target.tagName) || '';
+    if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if(e.key === 'Escape'){ stopAll(); return; }
+    const key = e.key.toUpperCase();
+    const pad = pads.find(p => p.hotkey === key);
+    if(pad) togglePlay(pad.id);
+  });
+
+  window.addEventListener('pagehide', saveState);
+
+  loadLibrary();
+
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+})();
+</script>
+
+
+</body>
+</html>
